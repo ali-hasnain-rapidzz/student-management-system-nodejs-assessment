@@ -111,11 +111,32 @@ const findStudentToUpdate = async (paylaod) => {
     return rows;
 }
 
+const deleteStudentById = async (id) => {
+    const { db } = require("../../config");
+    const client = await db.connect();
+    try {
+        await client.query("BEGIN");
+        await client.query("DELETE FROM user_profiles WHERE user_id = $1", [id]);
+        await client.query("DELETE FROM user_refresh_tokens WHERE user_id = $1", [id]);
+        await client.query("DELETE FROM user_leave_policy WHERE user_id = $1", [id]);
+        await client.query("DELETE FROM user_leaves WHERE user_id = $1", [id]);
+        const { rowCount } = await client.query("DELETE FROM users WHERE id = $1 AND role_id = 3", [id]);
+        await client.query("COMMIT");
+        return rowCount;
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
 module.exports = {
     getRoleId,
     findAllStudents,
     addOrUpdateStudent,
     findStudentDetail,
     findStudentToSetStatus,
-    findStudentToUpdate
+    findStudentToUpdate,
+    deleteStudentById,
 };
